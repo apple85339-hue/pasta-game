@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>甩出義大利麵！</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #333; font-family: sans-serif; }
+        #wall { width: 100vw; height: 100vh; background: #eee; position: relative; }
+        .noodle {
+            position: absolute;
+            width: 5px;
+            height: 40px;
+            background: #f1c40f;
+            border-radius: 5px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+            transition: transform 0.5s ease-out;
+        }
+        #instruction {
+            position: fixed; top: 50%; width: 100%; text-align: center;
+            color: #888; font-size: 1.5rem; pointer-events: none;
+        }
+        button {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            padding: 10px 20px; font-size: 1rem; z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="wall">
+        <div id="instruction">用力甩動手機！</div>
+    </div>
+    <button onclick="requestPermission()">點擊以啟動感測器</button>
+
+    <script>
+        let lastX, lastY, lastZ;
+        let threshold = 30; // 晃動門檻
+
+        function requestPermission() {
+            // iOS 需要使用者手動授權讀取感測器
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                DeviceMotionEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            window.addEventListener('devicemotion', handleMotion);
+                        }
+                    })
+                    .catch(console.error);
+            } else {
+                window.addEventListener('devicemotion', handleMotion);
+            }
+            document.querySelector('button').style.display = 'none';
+        }
+
+        function handleMotion(event) {
+            let acc = event.accelerationIncludingGravity;
+            if (!acc.x) return;
+
+            let delta = Math.abs(acc.x + acc.y + acc.z - lastX - lastY - lastZ);
+            
+            if (delta > threshold) {
+                throwSpaghetti();
+            }
+
+            lastX = acc.x;
+            lastY = acc.y;
+            lastZ = acc.z;
+        }
+
+        function throwSpaghetti() {
+            const wall = document.getElementById('wall');
+            const startX = window.innerWidth / 2;
+            const startY = window.innerHeight;
+            
+            // 隨機產生 3-5 條麵
+            const count = Math.floor(Math.random() * 3) + 3;
+            
+            for (let i = 0; i < count; i++) {
+                const noodle = document.createElement('div');
+                noodle.className = 'noodle';
+                wall.appendChild(noodle);
+
+                // 隨機牆上的落點
+                const targetX = Math.random() * window.innerWidth;
+                const targetY = Math.random() * (window.innerHeight * 0.7);
+                const rotation = Math.random() * 360;
+
+                // 初始位置（螢幕下方）
+                noodle.style.left = `${startX}px`;
+                noodle.style.top = `${startY}px`;
+
+                // 動畫噴射
+                setTimeout(() => {
+                    noodle.style.transition = "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+                    noodle.style.left = `${targetX}px`;
+                    noodle.style.top = `${targetY}px`;
+                    noodle.style.transform = `rotate(${rotation}deg)`;
+                }, 10);
+            }
+        }
+    </script>
+</body>
+</html>
